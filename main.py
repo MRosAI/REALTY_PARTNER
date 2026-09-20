@@ -663,7 +663,7 @@ def apartment_menu(room_count):
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="📞 Получить консультацию"),
+                KeyboardButton(text="📞 Обратиться к специалисту"),
             ],
             [
                 KeyboardButton(
@@ -1206,16 +1206,19 @@ async def contact_handler(
             f"💰 Цена: {apartment['price']}\n"
         )
 
-    print("\n" + lead_text)
+await bot.send_message(
+    chat_id=int(os.getenv("ADMIN_CHAT_ID")),
+    text=lead_text,
+)
 
-    await message.answer(
-        "✅ Спасибо!\n\n"
-        "Ваш номер получен. Специалист свяжется "
-        "с вами в ближайшее время.",
-        reply_markup=main_menu(),
-    )
+await message.answer(
+    "✅ Спасибо!\n\n"
+    "Ваш номер получен. Специалист свяжется "
+    "с вами в ближайшее время.",
+    reply_markup=main_menu(),
+)
 
-    await state.clear()
+await state.clear()
 
 
 @dp.message(F.text == "⬅️ Назад к квартире")
