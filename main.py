@@ -1117,7 +1117,25 @@ async def mortgage_handler(
 # КОНСУЛЬТАЦИЯ
 # ============================================================
 
-@dp.message(F.text == "📞 Получить консультацию")
+def contact_request_menu():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(
+                    text="📱 Оставить номер телефона",
+                    request_contact=True,
+                ),
+            ],
+            [
+                KeyboardButton(text="⬅️ Назад к квартире"),
+            ],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+@dp.message(F.text == "📞 Обратиться к специалисту")
 async def consultation_handler(
     message: Message,
     state: FSMContext,
@@ -1131,24 +1149,99 @@ async def consultation_handler(
 
     apartment = data.get("apartment")
 
+    await state.update_data(
+        consultation_complex=complex_name,
+    )
+
+    await message.answer(
+        "📞 Обратиться к специалисту\n\n"
+        "Оставьте номер телефона, и специалист свяжется "
+        "с вами по выбранному объекту.\n\n"
+        f"🏙 {complex_name}\n"
+        + (
+            f"🏠 {apartment['title']} — {apartment['area']}\n"
+            if apartment
+            else ""
+        ),
+        reply_markup=contact_request_menu(),
+    )
+
+
+@dp.message(F.contact)
+async def contact_handler(
+    message: Message,
+    state: FSMContext,
+):
+    data = await state.get_data()
+
+    complex_name = data.get(
+        "consultation_complex",
+        data.get("complex_name", "не указан"),
+    )
+
+    apartment = data.get("apartment")
+
+    phone = message.contact.phone_number
+    user_name = message.from_user.full_name
+    username = (
+        f"@{message.from_user.username}"
+        if message.from_user.username
+        else "не указан"
+    )
+    user_id = message.from_user.id
+
+    lead_text = (
+        "🔔 НОВАЯ ЗАЯВКА\n\n"
+        f"👤 Клиент: {user_name}\n"
+        f"📱 Телефон: {phone}\n"
+        f"💬 Telegram: {username}\n"
+        f"🆔 ID: {user_id}\n\n"
+        f"🏙 ЖК: {complex_name}\n"
+    )
+
     if apartment:
-        await message.answer(
-            f"📞 Консультация\n\n"
-            f"Вы выбрали:\n"
-            f"{complex_name}\n"
-            f"{apartment['title']}\n"
-            f"{apartment['area']}\n\n"
-            f"Функция связи с менеджером "
-            f"будет добавлена позже."
-        )
-    else:
-        await message.answer(
-            f"📞 Консультация по объекту\n\n"
-            f"{complex_name}\n\n"
-            f"Функция связи с менеджером "
-            f"будет добавлена позже."
+        lead_text += (
+            f"🏠 Квартира: {apartment['title']}\n"
+            f"📐 Площадь: {apartment['area']}\n"
+            f"💰 Цена: {apartment['price']}\n"
         )
 
+    print("\n" + lead_text)
+
+    await message.answer(
+        "✅ Спасибо!\n\n"
+        "Ваш номер получен. Специалист свяжется "
+        "с вами в ближайшее время.",
+        reply_markup=main_menu(),
+    )
+
+    await state.clear()
+
+
+@dp.message(F.text == "⬅️ Назад к квартире")
+async def back_to_apartment(
+    message: Message,
+    state: FSMContext,
+):
+    data = await state.get_data()
+    apartment = data.get("apartment")
+    room_count = data.get("room_count")
+
+    if apartment and room_count:
+        await message.answer(
+            f"🏠 {apartment['title']}\n\n"
+            f"🏙 ЖК: {data.get('complex_name', 'не указан')}\n"
+            f"📐 Площадь: {apartment['area']}\n"
+            f"🛋 Планировка: {apartment['layout']}\n"
+            f"🏢 Этаж: {apartment['floor']}\n"
+            f"🌆 Вид: {apartment['view']}\n\n"
+            f"💰 Стоимость: {apartment['price']}\n"
+            f"🏦 Ипотека: до 30 лет\n"
+            f"💳 Платёж: {apartment['payment']}\n\n"
+            f"🔗 Подробнее: https://example.com\n\n"
+            f"ℹ️ Информация является тестовой.",
+            reply_markup=apartment_menu(room_count),
+        )
 
 # ============================================================
 # НЕИЗВЕСТНАЯ КОМАНДА
