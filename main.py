@@ -1,5 +1,6 @@
 import os
 import asyncio
+import aiosmtplib
 
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F
@@ -27,6 +28,32 @@ if not BOT_TOKEN:
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+async def send_email(lead_text: str):
+    email_to = os.getenv("EMAIL_TO")
+    email_from = os.getenv("EMAIL_FROM")
+    email_password = os.getenv("EMAIL_PASSWORD")
+
+    if not email_to or not email_from or not email_password:
+        print("❌ Настройки электронной почты не найдены")
+        return
+
+    message = (
+        f"From: {email_from}\r\n"
+        f"To: {email_to}\r\n"
+        "Subject: Новая заявка — Недвижимость\r\n"
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "\r\n"
+        f"{lead_text}"
+    )
+
+    await aiosmtplib.send(
+        message,
+        hostname="smtp.yandex.ru",
+        port=465,
+        use_tls=True,
+        username=email_from,
+        password=email_password,
+    )
 
 
 # ============================================================
@@ -1206,19 +1233,23 @@ async def contact_handler(
             f"💰 Цена: {apartment['price']}\n"
         )
 
-await bot.send_message(
-    chat_id=int(os.getenv("ADMIN_CHAT_ID")),
-    text=lead_text,
-)
+    admin_chat_id = os.getenv("ADMIN_CHAT_ID")
 
-await message.answer(
-    "✅ Спасибо!\n\n"
-    "Ваш номер получен. Специалист свяжется "
-    "с вами в ближайшее время.",
-    reply_markup=main_menu(),
-)
+    if admin_chat_id:
+        await bot.send_message(
+            chat_id=int(admin_chat_id),
+            text=lead_text,
+        )
+    await send_email(lead_text)
 
-await state.clear()
+    await message.answer(
+        "✅ Спасибо!\n\n"
+        "Ваш номер получен. Специалист свяжется "
+        "с вами в ближайшее время.",
+        reply_markup=main_menu(),
+    )
+
+    await state.clear()
 
 
 @dp.message(F.text == "⬅️ Назад к квартире")
