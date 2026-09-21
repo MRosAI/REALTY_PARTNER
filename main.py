@@ -2,6 +2,8 @@ import os
 import asyncio
 import aiosmtplib
 
+from email.message import EmailMessage
+
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
@@ -37,20 +39,19 @@ async def send_email(lead_text: str):
         print("❌ Настройки электронной почты не найдены")
         return
 
-    message = (
-        f"From: {email_from}\r\n"
-        f"To: {email_to}\r\n"
-        "Subject: Новая заявка — Недвижимость\r\n"
-        "Content-Type: text/plain; charset=utf-8\r\n"
-        "\r\n"
-        f"{lead_text}"
-    )
+    message = EmailMessage()
+
+    message["From"] = email_from
+    message["To"] = email_to
+    message["Subject"] = "Новая заявка — Недвижимость"
+
+    message.set_content(lead_text)
 
     await aiosmtplib.send(
         message,
         hostname="smtp.yandex.ru",
-        port=465,
-        use_tls=True,
+        port=587,
+        start_tls=True,
         username=email_from,
         password=email_password,
     )
