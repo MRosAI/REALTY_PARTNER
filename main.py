@@ -1,8 +1,5 @@
 import os
 import asyncio
-import aiosmtplib
-
-from email.message import EmailMessage
 
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F
@@ -30,31 +27,6 @@ if not BOT_TOKEN:
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-async def send_email(lead_text: str):
-    email_to = os.getenv("EMAIL_TO")
-    email_from = os.getenv("EMAIL_FROM")
-    email_password = os.getenv("EMAIL_PASSWORD")
-
-    if not email_to or not email_from or not email_password:
-        print("❌ Настройки электронной почты не найдены")
-        return
-
-    message = EmailMessage()
-
-    message["From"] = email_from
-    message["To"] = email_to
-    message["Subject"] = "Новая заявка — Недвижимость"
-
-    message.set_content(lead_text)
-
-    await aiosmtplib.send(
-        message,
-        hostname="smtp.yandex.ru",
-        port=587,
-        start_tls=True,
-        username=email_from,
-        password=email_password,
-    )
 
 
 # ============================================================
@@ -63,7 +35,6 @@ async def send_email(lead_text: str):
 
 class RealtyState(StatesGroup):
     browsing = State()
-
 
 # ============================================================
 # ДАННЫЕ ЖК
@@ -1196,62 +1167,6 @@ async def consultation_handler(
 
 
 @dp.message(F.contact)
-async def contact_handler(
-    message: Message,
-    state: FSMContext,
-):
-    data = await state.get_data()
-
-    complex_name = data.get(
-        "consultation_complex",
-        data.get("complex_name", "не указан"),
-    )
-
-    apartment = data.get("apartment")
-
-    phone = message.contact.phone_number
-    user_name = message.from_user.full_name
-    username = (
-        f"@{message.from_user.username}"
-        if message.from_user.username
-        else "не указан"
-    )
-    user_id = message.from_user.id
-
-    lead_text = (
-        "🔔 НОВАЯ ЗАЯВКА\n\n"
-        f"👤 Клиент: {user_name}\n"
-        f"📱 Телефон: {phone}\n"
-        f"💬 Telegram: {username}\n"
-        f"🆔 ID: {user_id}\n\n"
-        f"🏙 ЖК: {complex_name}\n"
-    )
-
-    if apartment:
-        lead_text += (
-            f"🏠 Квартира: {apartment['title']}\n"
-            f"📐 Площадь: {apartment['area']}\n"
-            f"💰 Цена: {apartment['price']}\n"
-        )
-
-    admin_chat_id = os.getenv("ADMIN_CHAT_ID")
-
-    if admin_chat_id:
-        await bot.send_message(
-            chat_id=int(admin_chat_id),
-            text=lead_text,
-        )
-    await send_email(lead_text)
-
-    await message.answer(
-        "✅ Спасибо!\n\n"
-        "Ваш номер получен. Специалист свяжется "
-        "с вами в ближайшее время.",
-        reply_markup=main_menu(),
-    )
-
-    await state.clear()
-
 
 @dp.message(F.text == "⬅️ Назад к квартире")
 async def back_to_apartment(
@@ -1277,6 +1192,13 @@ async def back_to_apartment(
             f"ℹ️ Информация является тестовой.",
             reply_markup=apartment_menu(room_count),
         )
+        return
+
+    await message.answer(
+        "Не удалось восстановить карточку квартиры.\n\n"
+        "Пожалуйста, выберите жилой комплекс и квартиру заново.",
+        reply_markup=main_menu(),
+    )
 
 # ============================================================
 # НЕИЗВЕСТНАЯ КОМАНДА
