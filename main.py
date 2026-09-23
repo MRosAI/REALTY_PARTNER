@@ -10,6 +10,7 @@ from aiogram.types import (
     Message,
     ReplyKeyboardMarkup,
     KeyboardButton,
+    FSInputFile,
 )
 
 
@@ -20,6 +21,33 @@ from aiogram.types import (
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+SECRET_GARDEN_DIR = os.path.join(
+    BASE_DIR,
+    "files",
+    "secret_garden",
+)
+
+SECRET_GARDEN_APARTMENT_IMAGE = os.path.join(
+    SECRET_GARDEN_DIR,
+    "apartment.jpg",
+)
+
+SECRET_GARDEN_PRESENTATION = os.path.join(
+    SECRET_GARDEN_DIR,
+    "presentation.pdf",
+)
+
+SECRET_GARDEN_SALE_TERMS = os.path.join(
+    SECRET_GARDEN_DIR,
+    "sale_terms.pdf",
+)
+
+SECRET_GARDEN_MORTGAGE = os.path.join(
+    SECRET_GARDEN_DIR,
+    "mortgage.xlsx",
+)
 
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не найден в .env")
@@ -933,6 +961,16 @@ async def apartment_handler(
         f"ℹ️ Информация является тестовой."
     )
 
+    if (
+    complex_name == "Secret Garden"
+    and os.path.exists(SECRET_GARDEN_APARTMENT_IMAGE)
+):
+    await message.answer_photo(
+        photo=FSInputFile(SECRET_GARDEN_APARTMENT_IMAGE),
+        caption=apartment_text,
+        reply_markup=apartment_menu(room_count),
+    )
+else:
     await message.answer(
         apartment_text,
         reply_markup=apartment_menu(room_count),
@@ -1052,19 +1090,17 @@ async def back_to_main(
 # ПРЕЗЕНТАЦИЯ
 # ============================================================
 
-@dp.message(F.text == "📑 Презентация")
-async def presentation_handler(
-    message: Message,
-    state: FSMContext,
+if (
+    complex_name == "Secret Garden"
+    and os.path.exists(SECRET_GARDEN_PRESENTATION)
 ):
-    data = await state.get_data()
-    complex_name = data.get("complex_name", "жилого комплекса")
-
+    await message.answer_document(
+        document=FSInputFile(SECRET_GARDEN_PRESENTATION),
+        caption=f"📑 Презентация — {complex_name}",
+    )
+else:
     await message.answer(
-        f"📑 Презентация\n\n"
-        f"{complex_name}\n\n"
-        f"Файл презентации будет добавлен позже.\n\n"
-        f"Сейчас используется тестовый раздел."
+        "📑 Файл презентации пока не найден."
     )
 
 
@@ -1072,41 +1108,34 @@ async def presentation_handler(
 # УСЛОВИЯ ПРОДАЖИ
 # ============================================================
 
-@dp.message(F.text == "📄 Условия продажи")
-async def sale_terms_handler(
-    message: Message,
-    state: FSMContext,
+if (
+    complex_name == "Secret Garden"
+    and os.path.exists(SECRET_GARDEN_SALE_TERMS)
 ):
-    data = await state.get_data()
-    complex_name = data.get("complex_name", "жилого комплекса")
-
-    await message.answer(
-        f"📄 Условия продажи\n\n"
-        f"{complex_name}\n\n"
-        f"Документ с условиями продажи будет добавлен позже.\n\n"
-        f"Сейчас используется тестовый раздел."
+    await message.answer_document(
+        document=FSInputFile(SECRET_GARDEN_SALE_TERMS),
+        caption=f"📄 Условия продажи — {complex_name}",
     )
-
+else:
+    await message.answer(
+        "📄 Файл с условиями продажи пока не найден."
+    )
 
 # ============================================================
 # ИПОТЕЧНЫЕ ПРОГРАММЫ
 # ============================================================
 
-@dp.message(F.text == "🏦 Ипотечные программы")
-async def mortgage_handler(
-    message: Message,
-    state: FSMContext,
+if (
+    complex_name == "Secret Garden"
+    and os.path.exists(SECRET_GARDEN_MORTGAGE)
 ):
-    data = await state.get_data()
-    complex_name = data.get("complex_name", "жилого комплекса")
-
+    await message.answer_document(
+        document=FSInputFile(SECRET_GARDEN_MORTGAGE),
+        caption=f"🏦 Ипотечные программы — {complex_name}",
+    )
+else:
     await message.answer(
-        f"🏦 Ипотечные программы\n\n"
-        f"{complex_name}\n\n"
-        f"👨‍👩‍👧 Семейная ипотека — от 3.99%\n"
-        f"🏦 Стандартная ипотека — от 15.5%\n"
-        f"💳 Рассрочка — индивидуальные условия\n\n"
-        f"ℹ️ Ставки указаны для тестовой версии."
+        "🏦 Файл с ипотечными программами пока не найден."
     )
 
 
