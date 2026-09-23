@@ -661,9 +661,7 @@ def apartments_menu(apartments, room_count):
 def apartment_menu(room_count):
     return ReplyKeyboardMarkup(
         keyboard=[
-            [
-                KeyboardButton(text="📞 Обратиться к специалисту"),
-            ],
+        
             [
                 KeyboardButton(
                     text=f"⬅️ К списку {room_count}-комнатных"
@@ -1111,94 +1109,6 @@ async def mortgage_handler(
         f"ℹ️ Ставки указаны для тестовой версии."
     )
 
-
-# ============================================================
-# КОНСУЛЬТАЦИЯ
-# ============================================================
-
-def contact_request_menu():
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                KeyboardButton(
-                    text="📱 Оставить номер телефона",
-                    request_contact=True,
-                ),
-            ],
-            [
-                KeyboardButton(text="⬅️ Назад к квартире"),
-            ],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True,
-    )
-
-
-@dp.message(F.text == "📞 Обратиться к специалисту")
-async def consultation_handler(
-    message: Message,
-    state: FSMContext,
-):
-    data = await state.get_data()
-
-    complex_name = data.get(
-        "complex_name",
-        "жилого комплекса",
-    )
-
-    apartment = data.get("apartment")
-
-    await state.update_data(
-        consultation_complex=complex_name,
-    )
-
-    await message.answer(
-        "📞 Обратиться к специалисту\n\n"
-        "Оставьте номер телефона, и специалист свяжется "
-        "с вами по выбранному объекту.\n\n"
-        f"🏙 {complex_name}\n"
-        + (
-            f"🏠 {apartment['title']} — {apartment['area']}\n"
-            if apartment
-            else ""
-        ),
-        reply_markup=contact_request_menu(),
-    )
-
-
-@dp.message(F.contact)
-
-@dp.message(F.text == "⬅️ Назад к квартире")
-async def back_to_apartment(
-    message: Message,
-    state: FSMContext,
-):
-    data = await state.get_data()
-    apartment = data.get("apartment")
-    room_count = data.get("room_count")
-
-    if apartment and room_count:
-        await message.answer(
-            f"🏠 {apartment['title']}\n\n"
-            f"🏙 ЖК: {data.get('complex_name', 'не указан')}\n"
-            f"📐 Площадь: {apartment['area']}\n"
-            f"🛋 Планировка: {apartment['layout']}\n"
-            f"🏢 Этаж: {apartment['floor']}\n"
-            f"🌆 Вид: {apartment['view']}\n\n"
-            f"💰 Стоимость: {apartment['price']}\n"
-            f"🏦 Ипотека: до 30 лет\n"
-            f"💳 Платёж: {apartment['payment']}\n\n"
-            f"🔗 Подробнее: https://example.com\n\n"
-            f"ℹ️ Информация является тестовой.",
-            reply_markup=apartment_menu(room_count),
-        )
-        return
-
-    await message.answer(
-        "Не удалось восстановить карточку квартиры.\n\n"
-        "Пожалуйста, выберите жилой комплекс и квартиру заново.",
-        reply_markup=main_menu(),
-    )
 
 # ============================================================
 # НЕИЗВЕСТНАЯ КОМАНДА
